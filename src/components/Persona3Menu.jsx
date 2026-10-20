@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RESUME_DATA } from '../data/resumeData';
 import {
   playPop,
@@ -106,24 +106,39 @@ export function Persona3Menu() {
     } catch (e) {}
   };
 
-  // Background Lo-Fi music initialization with browser user-gesture listener
+  // Background Lo-Fi music initialization with persistent mobile gesture unlocking
   useEffect(() => {
-    playBgm();
-    const handleGesture = () => {
-      playBgm();
-      window.removeEventListener('click', handleGesture);
-      window.removeEventListener('touchstart', handleGesture);
-      window.removeEventListener('keydown', handleGesture);
+    let isStarted = false;
+
+    const tryStartAudio = () => {
+      if (isStarted) return;
+      playBgm()
+        .then(() => {
+          isStarted = true;
+          window.removeEventListener('click', tryStartAudio);
+          window.removeEventListener('touchend', tryStartAudio);
+          window.removeEventListener('pointerup', tryStartAudio);
+          window.removeEventListener('keydown', tryStartAudio);
+        })
+        .catch(() => {
+          // Play was blocked by mobile browser autoplay; keep listening for next interaction
+        });
     };
 
-    window.addEventListener('click', handleGesture);
-    window.addEventListener('touchstart', handleGesture);
-    window.addEventListener('keydown', handleGesture);
+    // Attempt immediately (works on desktop / allowed environments)
+    tryStartAudio();
+
+    // Listen on multiple user gesture events for mobile (Brave/Chrome/Safari require user gesture)
+    window.addEventListener('click', tryStartAudio, { passive: true });
+    window.addEventListener('touchend', tryStartAudio, { passive: true });
+    window.addEventListener('pointerup', tryStartAudio, { passive: true });
+    window.addEventListener('keydown', tryStartAudio, { passive: true });
 
     return () => {
-      window.removeEventListener('click', handleGesture);
-      window.removeEventListener('touchstart', handleGesture);
-      window.removeEventListener('keydown', handleGesture);
+      window.removeEventListener('click', tryStartAudio);
+      window.removeEventListener('touchend', tryStartAudio);
+      window.removeEventListener('pointerup', tryStartAudio);
+      window.removeEventListener('keydown', tryStartAudio);
     };
   }, []);
 
@@ -220,8 +235,14 @@ export function Persona3Menu() {
       ]
     : baseMenuItems;
 
+  const menuColRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+
   const handleSelectTab = (tabId) => {
     triggerHaptic(12);
+    // User interacted with tab: ensure audio plays if not muted
+    playBgm().catch(() => {});
     if (tabId === 'SECRET') {
       playOneMore();
       setIsGameOpen(true);
@@ -229,6 +250,57 @@ export function Persona3Menu() {
     }
     playPop();
     setActiveTab(tabId);
+  };
+
+  const goToNextTab = () => {
+    const currentIndex = menuItems.findIndex((m) => m.id === activeTab);
+    const nextIndex = (currentIndex + 1) % menuItems.length;
+    handleSelectTab(menuItems[nextIndex].id);
+  };
+
+  const goToPrevTab = () => {
+    const currentIndex = menuItems.findIndex((m) => m.id === activeTab);
+    const prevIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
+    handleSelectTab(menuItems[prevIndex].id);
+  };
+
+  // Auto-scroll active tab into view in the horizontal mobile ribbon
+  useEffect(() => {
+    if (menuColRef.current) {
+      const activeBtn = menuColRef.current.querySelector(`[data-tab="${activeTab}"]`);
+      if (activeBtn) {
+        activeBtn.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'center',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [activeTab]);
+
+  // Mobile horizontal swipe gestures to switch between tactical panels
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Detect horizontal swipe with higher horizontal than vertical delta & 45px threshold
+    if (Math.abs(deltaX) > Math.abs(deltaY) * 1.25 && Math.abs(deltaX) > 45) {
+      if (deltaX < 0) {
+        // Swiped Left (finger dragged right-to-left) -> GO TO NEXT PANEL
+        goToNextTab();
+      } else {
+        // Swiped Right (finger dragged left-to-right) -> GO TO PREV PANEL
+        goToPrevTab();
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
   };
 
   // Keyboard JRPG Console Controller Navigation
@@ -630,91 +702,123 @@ export function Persona3Menu() {
           </div>
         </div>
 
-        {/* Column 2: Persona 3 Slanted Menu Column */}
-        <div
-          className="p3-menu-col"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.45rem',
-            position: 'relative',
-          }}
-        >
-          {menuItems.map((item, idx) => {
-            const isActive = activeTab === item.id;
+        {/* Column 2: Persona 3 Slanted Menu Navigation Strip */}
+        <div className="p3-menu-nav-wrapper">
+          {/* Mobile Prev Tab Arrow */}
+          <button
+            type="button"
+            className="p3-mobile-nav-arrow p3-mobile-prev"
+            onClick={goToPrevTab}
+            aria-label="Previous Tactical Panel"
+          >
+            ◀
+          </button>
 
-            return (
-              <div
-                key={item.id}
-                className="p3-menu-item"
-                onClick={() => handleSelectTab(item.id)}
-                style={{
-                  position: 'relative',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                  transform: isActive ? 'translateX(18px) scale(1.04)' : 'translateX(0)',
-                }}
-                onMouseEnter={() => playBoop()}
-              >
-                {/* Menu Option Cutout Banner */}
+          <div
+            ref={menuColRef}
+            className="p3-menu-col"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.45rem',
+              position: 'relative',
+            }}
+          >
+            {menuItems.map((item, idx) => {
+              const isActive = activeTab === item.id;
+
+              return (
                 <div
-                  className="p3-menu-banner"
+                  key={item.id}
+                  data-tab={item.id}
+                  className="p3-menu-item"
+                  onClick={() => handleSelectTab(item.id)}
                   style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.8rem',
-                    padding: isActive ? '0.35rem 1.6rem 0.35rem 1.4rem' : '0.25rem 1.2rem',
-                    background: isActive
-                      ? item.color === '#FF1E44'
-                        ? 'linear-gradient(90deg, #FF1E44 0%, #FF4565 100%)'
-                        : 'linear-gradient(90deg, #00D2FF 0%, #0066FF 100%)'
-                      : 'rgba(5, 12, 34, 0.65)',
-                    color: isActive ? '#FFFFFF' : '#94A3B8',
-                    border: isActive ? '2px solid #FFFFFF' : '1.5px solid var(--p3-border)',
-                    boxShadow: isActive ? '5px 5px 0px #000, 0 0 25px rgba(0, 210, 255, 0.5)' : '2px 2px 0px #000',
-                    transform: 'skewX(-14deg)',
-                    minWidth: '200px',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    transform: isActive ? 'translateX(18px) scale(1.04)' : 'translateX(0)',
                   }}
+                  onMouseEnter={() => playBoop()}
                 >
-                  <span
+                  {/* Menu Option Cutout Banner */}
+                  <div
+                    className="p3-menu-banner"
                     style={{
-                      display: 'inline-block',
-                      transform: 'skewX(14deg)',
-                      fontFamily: 'var(--font-p3-display)',
-                      fontSize: isActive ? '2.1rem' : '1.7rem',
-                      fontWeight: 900,
-                      letterSpacing: '0.08em',
-                      lineHeight: 1,
-                      textShadow: isActive ? '2px 2px 0px #000' : 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.8rem',
+                      padding: isActive ? '0.35rem 1.6rem 0.35rem 1.4rem' : '0.25rem 1.2rem',
+                      background: isActive
+                        ? item.color === '#FF1E44'
+                          ? 'linear-gradient(90deg, #FF1E44 0%, #FF4565 100%)'
+                          : 'linear-gradient(90deg, #00D2FF 0%, #0066FF 100%)'
+                        : 'rgba(5, 12, 34, 0.65)',
+                      color: isActive ? '#FFFFFF' : '#94A3B8',
+                      border: isActive ? '2px solid #FFFFFF' : '1.5px solid var(--p3-border)',
+                      boxShadow: isActive ? '5px 5px 0px #000, 0 0 25px rgba(0, 210, 255, 0.5)' : '2px 2px 0px #000',
+                      transform: 'skewX(-14deg)',
+                      minWidth: '200px',
                     }}
                   >
-                    {item.label}
-                  </span>
-
-                  {isActive && (
                     <span
                       style={{
+                        display: 'inline-block',
                         transform: 'skewX(14deg)',
-                        fontFamily: 'var(--font-p3-mono)',
-                        fontSize: '0.75rem',
-                        background: '#000000',
-                        color: '#FFFFFF',
-                        padding: '0.1rem 0.4rem',
-                        fontWeight: 700,
+                        fontFamily: 'var(--font-p3-display)',
+                        fontSize: isActive ? '2.1rem' : '1.7rem',
+                        fontWeight: 900,
+                        letterSpacing: '0.08em',
+                        lineHeight: 1,
+                        textShadow: isActive ? '2px 2px 0px #000' : 'none',
                       }}
                     >
-                      ACTIVE
+                      {item.label}
                     </span>
-                  )}
+
+                    {isActive && (
+                      <span
+                        className="p3-active-tag"
+                        style={{
+                          transform: 'skewX(14deg)',
+                          fontFamily: 'var(--font-p3-mono)',
+                          fontSize: '0.75rem',
+                          background: '#000000',
+                          color: '#FFFFFF',
+                          padding: '0.1rem 0.4rem',
+                          fontWeight: 700,
+                        }}
+                      >
+                        ACTIVE
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Mobile Next Tab Arrow */}
+          <button
+            type="button"
+            className="p3-mobile-nav-arrow p3-mobile-next"
+            onClick={goToNextTab}
+            aria-label="Next Tactical Panel"
+          >
+            ▶
+          </button>
+        </div>
+
+        {/* Mobile Swipe / Panel Status Bar */}
+        <div className="p3-mobile-swipe-hint">
+          <span>◀ SWIPE PANELS // {activeTab} [{menuItems.findIndex((m) => m.id === activeTab) + 1}/{menuItems.length}] ▶</span>
         </div>
 
         {/* Right Column: Active Persona 3 Submenu Screen (Sliding In) */}
         <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           style={{
             background: 'rgba(4, 9, 28, 0.92)',
             border: '3px solid var(--p3-cyan)',

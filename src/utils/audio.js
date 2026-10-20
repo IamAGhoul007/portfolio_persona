@@ -41,24 +41,36 @@ let bgmMuted = false;
 export function initBgm() {
   if (typeof window === 'undefined') return null;
   if (!bgmAudio) {
-    // Resilient path resolution across Vercel, Netlify, GitHub Pages, or custom domains
+    // Resilient path resolution across Vercel, Netlify, Render, GitHub Pages, or custom domains
     const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
       ? import.meta.env.BASE_URL
       : './';
     const cleanBase = base.endsWith('/') ? base : `${base}/`;
-    const primarySrc = `${cleanBase}assets/p3_lofi_bgm.mp3`;
+    
+    let primarySrc;
+    try {
+      primarySrc = new URL(`${cleanBase}assets/p3_lofi_bgm.mp3`, window.location.href).href;
+    } catch (e) {
+      primarySrc = `${cleanBase}assets/p3_lofi_bgm.mp3`;
+    }
 
-    bgmAudio = new Audio(primarySrc);
+    bgmAudio = new Audio();
+    bgmAudio.src = primarySrc;
     bgmAudio.loop = true;
-    bgmAudio.volume = 0.32; // comfortable, relaxing lo-fi background volume
+    bgmAudio.volume = 0.35; // comfortable, relaxing lo-fi background volume
+    bgmAudio.preload = 'auto';
+    bgmAudio.setAttribute('playsinline', 'true');
+    bgmAudio.setAttribute('webkit-playsinline', 'true');
 
     // Secondary fallback for sub-route reloads or alternate CDN asset roots
     bgmAudio.addEventListener('error', () => {
       const fallbackSrc = '/assets/p3_lofi_bgm.mp3';
       if (bgmAudio && bgmAudio.src && !bgmAudio.src.endsWith(fallbackSrc)) {
         bgmAudio.src = fallbackSrc;
-        bgmAudio.load();
-        if (!bgmMuted) bgmAudio.play().catch(() => {});
+        try {
+          bgmAudio.load();
+          if (!bgmMuted) bgmAudio.play().catch(() => {});
+        } catch (e) {}
       }
     });
 
@@ -67,20 +79,37 @@ export function initBgm() {
       bgmMuted = saved === 'true';
     }
     bgmAudio.muted = bgmMuted;
+
+    try {
+      bgmAudio.load();
+    } catch (e) {}
   }
   return bgmAudio;
 }
 
 export function playBgm() {
   const audio = initBgm();
-  if (audio && !bgmMuted) {
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Autoplay policy: will trigger on first user click or touch
-      });
+  if (!audio) return Promise.resolve();
+
+  // If user explicitly muted in SYSTEM settings, respect preference
+  if (bgmMuted) return Promise.resolve();
+
+  // Make sure Web Audio context is also resumed for sound effects
+  try {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
     }
+  } catch (e) {}
+
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    return playPromise.catch((err) => {
+      // Browser autoplay policy blocked. Gesture listener will retry on user tap
+      return Promise.reject(err);
+    });
   }
+  return Promise.resolve();
 }
 
 export function pauseBgm() {
@@ -107,8 +136,10 @@ export function toggleBgmMute() {
   }
   if (audio) {
     audio.muted = bgmMuted;
-    if (!bgmMuted && audio.paused) {
+    if (!bgmMuted) {
       audio.play().catch(() => {});
+    } else {
+      audio.pause();
     }
   }
   return bgmMuted;
