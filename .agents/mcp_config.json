@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "command": "npx",
+      "args": ["-y", "@_davideast/stitch-mcp", "proxy"],
+      "env": {
+        "STITCH_API_KEY": "${STITCH_API_KEY}"
+      }
+    },
+    "syncause-debugger": {
+      "command": "npx",
+      "args": ["-y", "@syncause/mcp-server"],
+      "env": {
+        "SYNCAUSE_API_KEY": "${SYNCAUSE_API_KEY}"
+      }
+    }
+  }
+}

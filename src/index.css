@@ -1,0 +1,647 @@
+/* ==========================================================================
+   AMAN MATHUR - PERSONA 3 RELOAD SCI-FI TACTICAL PORTFOLIO INTERFACE
+   Aesthetic: "Sinking into the Heart" / Dark Hour Tartarus Cyberpunk
+   Inspired by: Persona 3 Reload (Shigenori Soejima, Tomohiro Kumagai)
+   ========================================================================== */
+
+:root {
+  /* Persona 3 Reload Signature Ocean Blue & Tartarus Palette */
+  --p3-bg-dark: #050814;
+  --p3-bg-navy: #080F29;
+  --p3-bg-surface: #0E1738;
+  --p3-bg-surface-hover: #14214F;
+  --p3-bg-glass: rgba(10, 18, 46, 0.82);
+
+  --p3-cyan: #00D2FF;
+  --p3-cyan-glow: rgba(0, 210, 255, 0.45);
+  --p3-blue: #0066FF;
+  --p3-deep-blue: #0033AA;
+  --p3-ice: #E0F7FF;
+  --p3-white: #FFFFFF;
+
+  --p3-crimson: #FF1E44;
+  --p3-crimson-glow: rgba(255, 30, 68, 0.45);
+  --p3-gold: #FFE600;
+  --p3-gold-glow: rgba(255, 230, 0, 0.45);
+  --p3-dark-hour-green: #39FF14;
+
+  --p3-border: #1B2B5C;
+  --p3-border-cyan: #00D2FF;
+  --p3-border-sharp: 2px solid var(--p3-cyan);
+
+  --p3-shadow: 4px 4px 0px #000000, 0 0 20px rgba(0, 210, 255, 0.25);
+  --p3-shadow-hover: 6px 6px 0px #000000, 0 0 30px rgba(0, 210, 255, 0.5);
+  --p3-shadow-crimson: 4px 4px 0px #000000, 0 0 20px rgba(255, 30, 68, 0.4);
+
+  --font-p3-display: 'Teko', sans-serif;
+  --font-p3-tech: 'Rajdhani', sans-serif;
+  --font-p3-mono: 'JetBrains Mono', monospace;
+  --font-p3-body: 'Nunito', sans-serif;
+
+  --p3-skew: skewX(-8deg);
+  --p3-skew-rev: skewX(8deg);
+}
+
+/* Light Mode / "Daylight Protocol - Gekkoukan Academy" */
+[data-theme="light"] {
+  --p3-bg-dark: #F0F6FF;
+  --p3-bg-navy: #FFFFFF;
+  --p3-bg-surface: #E8F1FC;
+  --p3-bg-surface-hover: #DDEAFC;
+  --p3-bg-glass: rgba(255, 255, 255, 0.88);
+
+  --p3-border: #BBD5F2;
+  --p3-border-cyan: #0077D4;
+  --p3-cyan: #0066CC;
+  --p3-cyan-glow: rgba(0, 102, 204, 0.25);
+  --p3-ice: #0F172A;
+  --p3-white: #0B1120;
+
+  --p3-shadow: 4px 4px 0px #BBD5F2, 0 0 16px rgba(0, 102, 204, 0.15);
+  --p3-shadow-hover: 6px 6px 0px #94BAE5, 0 0 24px rgba(0, 102, 204, 0.3);
+}
+
+/* Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  background: var(--p3-bg-dark);
+}
+
+body {
+  font-family: var(--p3-tech);
+  background-color: var(--p3-bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 25%, rgba(0, 210, 255, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(0, 76, 232, 0.12) 0%, transparent 50%),
+    linear-gradient(rgba(0, 210, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  background-attachment: fixed;
+  color: var(--p3-ice);
+  min-height: 100vh;
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dynamic Scanlines Overlay */
+body::before {
+  content: " ";
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  z-index: 999;
+  pointer-events: none;
+  opacity: 0.22;
+}
+
+/* Selection */
+::selection {
+  background: var(--p3-cyan);
+  color: #000;
+}
+
+/* Accessibility Focus Ring */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--p3-cyan), 0 0 12px var(--p3-cyan-glow);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--p3-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p3-ice);
+  line-height: 1.1;
+}
+
+p {
+  color: #94A3B8;
+  font-size: 1.05rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--p3-tech);
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+.container {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ==========================================================================
+   PERSONA 3 RELOAD CUTS & TACTICAL CARDS
+   ========================================================================== */
+
+.p3-card {
+  background: var(--p3-bg-navy);
+  border: 2px solid var(--p3-border);
+  box-shadow: var(--p3-shadow);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+.p3-card:hover {
+  transform: translateY(-4px) scale(1.008);
+  border-color: var(--p3-cyan);
+  box-shadow: var(--p3-shadow-hover);
+}
+
+/* Angled Header Banner */
+.p3-banner-title {
+  display: inline-block;
+  background: var(--p3-cyan);
+  color: #000000;
+  padding: 0.2rem 1.4rem;
+  font-family: var(--p3-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: skewX(-12deg);
+  box-shadow: 4px 4px 0px #000;
+}
+
+.p3-banner-title span {
+  display: inline-block;
+  transform: skewX(12deg);
+}
+
+.p3-banner-crimson {
+  background: var(--p3-crimson);
+  color: #FFFFFF;
+}
+
+.p3-banner-gold {
+  background: var(--p3-gold);
+  color: #000000;
+}
+
+/* Tactical Action Buttons */
+.p3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.6rem;
+  min-height: 48px;
+  font-family: var(--p3-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--p3-cyan);
+  color: #050814;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  transform: skewX(-10deg);
+  transition: all 0.15s ease-out;
+  cursor: pointer;
+  user-select: none;
+}
+
+.p3-btn > * {
+  transform: skewX(10deg);
+}
+
+.p3-btn:hover {
+  background: #FFFFFF;
+  color: #004CE8;
+  transform: skewX(-10deg) translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #00D2FF;
+}
+
+.p3-btn:active {
+  transform: skewX(-10deg) translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.p3-btn-secondary {
+  background: var(--p3-bg-surface);
+  color: var(--p3-ice);
+  border-color: var(--p3-border);
+}
+
+.p3-btn-secondary:hover {
+  background: var(--p3-border);
+  color: var(--p3-cyan);
+  box-shadow: 6px 6px 0px #000;
+}
+
+.p3-btn-crimson {
+  background: var(--p3-crimson);
+  color: #FFFFFF;
+  border-color: #000;
+}
+
+.p3-btn-crimson:hover {
+  background: #FF4D6D;
+  color: #FFFFFF;
+  box-shadow: 6px 6px 0px var(--p3-cyan);
+}
+
+.p3-btn-sm {
+  min-height: 38px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1.15rem;
+}
+
+/* S.E.E.S. Tactical Tag / Pill */
+.p3-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.8rem;
+  background: rgba(0, 210, 255, 0.1);
+  border: 1.5px solid var(--p3-cyan);
+  color: var(--p3-cyan);
+  font-family: var(--p3-tech);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transform: skewX(-8deg);
+}
+
+.p3-tag > * {
+  transform: skewX(8deg);
+}
+
+/* Section Header */
+.section-header {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 3.5rem auto;
+}
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1.2rem;
+  background: rgba(0, 210, 255, 0.12);
+  border: 1.5px solid var(--p3-cyan);
+  color: var(--p3-cyan);
+  font-family: var(--p3-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  transform: skewX(-10deg);
+  box-shadow: 3px 3px 0px #000;
+}
+
+.section-tag > * {
+  transform: skewX(10deg);
+}
+
+.section-title {
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.8rem;
+  color: var(--p3-white);
+}
+
+.section-title span {
+  color: var(--p3-cyan);
+  text-shadow: 0 0 20px var(--p3-cyan-glow);
+}
+
+.section-desc {
+  font-size: 1.15rem;
+  color: #94A3B8;
+  font-family: var(--p3-tech);
+}
+
+/* Glass Shards Ambient Animation */
+@keyframes shardFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(4deg);
+  }
+}
+
+.animate-shard {
+  animation: shardFloat 5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px var(--p3-cyan-glow);
+  }
+  50% {
+    box-shadow: 0 0 35px var(--p3-cyan-glow), 0 0 60px rgba(0, 76, 232, 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite;
+}
+
+/* All-Out Attack Full-Screen Shutter Effect */
+@keyframes shatterIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.3) rotate(-5deg);
+  }
+  60% {
+    transform: scale(0.97) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.aoa-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 20, 0.95);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: shatterIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Modal Backdrops */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-dialog {
+  background: var(--p3-bg-navy);
+  border: 3px solid var(--p3-cyan);
+  box-shadow: 8px 8px 0px #000000, 0 0 40px rgba(0, 210, 255, 0.35);
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  clip-path: polygon(0 0, calc(100% - 24px) 0, 100% 24px, 100% 100%, 24px 100%, 0 calc(100% - 24px));
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--p3-bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--p3-cyan);
+  border: 2px solid #000;
+}
+
+/* ==========================================================================
+   MOBILE & HANDHELD RESPONSIVE PROTOCOL (Persona 3 Portable Layout)
+   ========================================================================== */
+
+.p3-menu-wrapper {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.p3-top-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  z-index: 10;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.p3-main-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 270px) minmax(210px, 240px) minmax(360px, 1fr);
+  gap: 1.8rem;
+  align-items: start;
+  flex: 1;
+  margin: 1rem 0;
+  z-index: 5;
+}
+
+.p3-protagonist-img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  display: block;
+  filter: contrast(1.08) brightness(1.02);
+}
+
+.p3-menu-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  position: relative;
+}
+
+.p3-submenu-container {
+  background: rgba(4, 9, 28, 0.92);
+  border: 3px solid var(--p3-cyan);
+  box-shadow: 8px 8px 0px #000, 0 0 45px rgba(0, 210, 255, 0.35);
+  padding: 2rem;
+  position: relative;
+  max-height: 82vh;
+  overflow-y: auto;
+  transform: skewX(-2deg);
+  backdrop-filter: blur(16px);
+}
+
+/* Tablet Screens (under 1200px) */
+@media (max-width: 1200px) {
+  .p3-menu-wrapper {
+    padding: 1.25rem 1.25rem;
+  }
+  .p3-main-grid {
+    grid-template-columns: 210px 190px 1fr;
+    gap: 1.2rem;
+  }
+}
+
+/* Mobile Screens (under 980px) */
+@media (max-width: 980px) {
+  .p3-menu-wrapper {
+    padding: 0.75rem 0.85rem !important;
+  }
+
+  .p3-top-hud {
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+
+  .p3-party-hud {
+    width: 100% !important;
+    transform: none !important;
+    padding: 0.4rem 0.75rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .p3-party-hud > div {
+    transform: none !important;
+  }
+
+  .p3-clock-hud {
+    width: 100% !important;
+    transform: none !important;
+    justify-content: center !important;
+    padding: 0.35rem 0.6rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .p3-clock-hud > div {
+    transform: none !important;
+    gap: 0.55rem !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .p3-keyboard-hints {
+    display: none !important;
+  }
+
+  .p3-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.85rem !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  /* Protagonist becomes a sleek, high-impact landscape banner on mobile */
+  .p3-protagonist-col {
+    width: 100% !important;
+  }
+
+  .p3-protagonist-frame {
+    transform: none !important;
+    max-height: 120px !important;
+    border-width: 2px !important;
+  }
+
+  .p3-protagonist-img {
+    aspect-ratio: auto !important;
+    height: 120px !important;
+    width: 100% !important;
+    object-position: center 25% !important;
+  }
+
+  .p3-protagonist-label {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    bottom: 6px !important;
+    left: 6px !important;
+    right: 6px !important;
+  }
+
+  /* Slanted menu becomes a horizontal swipeable ribbon */
+  .p3-menu-col {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 0.5rem !important;
+    padding: 0.3rem 0.15rem 0.6rem 0.15rem !important;
+    scrollbar-width: none !important;
+  }
+
+  .p3-menu-col::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .p3-menu-item {
+    transform: none !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start !important;
+  }
+
+  .p3-menu-banner {
+    min-width: unset !important;
+    padding: 0.45rem 1rem !important;
+    transform: skewX(-8deg) !important;
+    min-height: 44px !important;
+  }
+
+  .p3-menu-banner span {
+    font-size: 1.35rem !important;
+    transform: skewX(8deg) !important;
+  }
+
+  /* Submenu container takes full width with natural touch scrolling */
+  .p3-submenu-container {
+    transform: none !important;
+    padding: 1.15rem 0.85rem !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    border-width: 2px !important;
+  }
+
+  .p3-submenu-container > div {
+    transform: none !important;
+  }
+
+  .p3-submenu-container h2 {
+    font-size: 1.8rem !important;
+  }
+
+  /* Bottom controller guide wraps cleanly */
+  .p3-bottom-hud {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.4rem !important;
+    padding-top: 0.6rem !important;
+  }
+
+  /* Modal responsiveness */
+  .modal-dialog {
+    padding: 1.25rem 1rem !important;
+    width: 95% !important;
+    max-height: 88vh !important;
+  }
+}
+
