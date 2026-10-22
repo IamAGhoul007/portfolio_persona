@@ -15,6 +15,15 @@ function getAudioContext() {
   return audioCtx;
 }
 
+export function resumeAudioContext() {
+  try {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  } catch (e) {}
+}
+
 export function isSoundEnabled() {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('sound_enabled');

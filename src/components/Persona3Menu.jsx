@@ -7,7 +7,8 @@ import {
   playOneMore,
   playBgm,
   isBgmMuted,
-  toggleBgmMute
+  toggleBgmMute,
+  resumeAudioContext
 } from '../utils/audio';
 import { ProjectModal } from './ProjectModal';
 import { TicTacToeModal } from './TicTacToeModal';
@@ -70,6 +71,7 @@ export function Persona3Menu() {
   const [confettiClicks, setConfettiClicks] = useState(0);
   const [isSecretUnlocked, setIsSecretUnlocked] = useState(false);
   const [bgmMuted, setBgmMuted] = useState(() => isBgmMuted());
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
 
   // Real-time Persona 3 Calendar Date, Time & Dark Hour Detection
   const [clockTime, setClockTime] = useState(() => {
@@ -106,47 +108,56 @@ export function Persona3Menu() {
     } catch (e) {}
   };
 
-  // Background Lo-Fi music initialization with persistent mobile gesture unlocking
+  // Background Lo-Fi music initialization with instantaneous cross-platform gesture unlocking
   useEffect(() => {
     let isStarted = false;
 
-    const tryStartAudio = () => {
+    const unlockAudio = () => {
       if (isStarted) return;
+      resumeAudioContext();
       playBgm()
         .then(() => {
           isStarted = true;
-          window.removeEventListener('click', tryStartAudio);
-          window.removeEventListener('touchend', tryStartAudio);
-          window.removeEventListener('pointerup', tryStartAudio);
-          window.removeEventListener('keydown', tryStartAudio);
+          setIsAudioUnlocked(true);
+          cleanup();
         })
         .catch(() => {
-          // Play was blocked by mobile browser autoplay; keep listening for next interaction
+          // Play was blocked by browser autoplay policy; will retry on first touch/pointerdown/click
         });
     };
 
-    // Attempt immediately (works on desktop / allowed environments)
-    tryStartAudio();
+    const events = ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click', 'touchend', 'wheel'];
 
-    // Listen on multiple user gesture events for mobile (Brave/Chrome/Safari require user gesture)
-    window.addEventListener('click', tryStartAudio, { passive: true });
-    window.addEventListener('touchend', tryStartAudio, { passive: true });
-    window.addEventListener('pointerup', tryStartAudio, { passive: true });
-    window.addEventListener('keydown', tryStartAudio, { passive: true });
+    const cleanup = () => {
+      events.forEach((event) => {
+        window.removeEventListener(event, unlockAudio, { capture: true });
+        document.removeEventListener(event, unlockAudio, { capture: true });
+      });
+    };
+
+    // Attempt immediately (works on desktop if user previously visited domain or autoplay is allowed)
+    unlockAudio();
+
+    // Listen on earliest touch/pointer down on document & window with capture phase
+    events.forEach((event) => {
+      window.addEventListener(event, unlockAudio, { capture: true, passive: true });
+      document.addEventListener(event, unlockAudio, { capture: true, passive: true });
+    });
 
     return () => {
-      window.removeEventListener('click', tryStartAudio);
-      window.removeEventListener('touchend', tryStartAudio);
-      window.removeEventListener('pointerup', tryStartAudio);
-      window.removeEventListener('keydown', tryStartAudio);
+      cleanup();
     };
   }, []);
 
   const handleToggleBgm = () => {
     playPop();
     triggerHaptic(15);
+    resumeAudioContext();
     const newMuted = toggleBgmMute();
     setBgmMuted(newMuted);
+    if (!newMuted) {
+      setIsAudioUnlocked(true);
+    }
   };
 
   // Player Level & EXP system (resets to Level 0 and 0 XP on every page reload)
@@ -629,9 +640,70 @@ export function Persona3Menu() {
                 </span>
               </div>
             </div>
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '18px', background: 'rgba(0, 210, 255, 0.35)' }} />
+
+            {/* Quick BGM Sound HUD Toggle */}
+            <button
+              onClick={handleToggleBgm}
+              className="p3-hud-sound-pill"
+              style={{
+                background: bgmMuted ? 'rgba(255, 30, 68, 0.25)' : 'rgba(0, 210, 255, 0.2)',
+                border: bgmMuted ? '1px solid var(--p3-crimson)' : '1px solid var(--p3-cyan)',
+                color: bgmMuted ? 'var(--p3-crimson)' : 'var(--p3-cyan)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.2rem 0.55rem',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-p3-tech)',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                letterSpacing: '0.05em',
+                transition: 'all 0.2s ease',
+              }}
+              title={bgmMuted ? "Unmute BGM (Persona 3 Lo-Fi)" : "Mute BGM"}
+              aria-label={bgmMuted ? "Unmute BGM" : "Mute BGM"}
+            >
+              {bgmMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+              <span>{bgmMuted ? 'BGM OFF' : 'BGM ON'}</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Standby Audio Notification Banner (Disappears automatically as soon as user touches/clicks anywhere) */}
+      {!isAudioUnlocked && !bgmMuted && (
+        <div
+          onClick={handleToggleBgm}
+          style={{
+            cursor: 'pointer',
+            background: 'linear-gradient(90deg, rgba(0, 76, 232, 0.9), rgba(0, 210, 255, 0.9))',
+            color: '#FFF',
+            border: '2px solid #FFF',
+            boxShadow: '0 0 20px rgba(0, 210, 255, 0.5), 4px 4px 0 #000',
+            padding: '0.4rem 1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.6rem',
+            fontFamily: 'var(--font-p3-display)',
+            fontSize: '0.85rem',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            marginBottom: '0.65rem',
+            animation: 'pulse 1.8s infinite',
+            zIndex: 20,
+            transform: 'skewX(-4deg)',
+          }}
+        >
+          <div style={{ transform: 'skewX(4deg)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Volume2 size={16} />
+            <span>[ PERSONA 3 AUDIO STANDBY ] // TAP ANYWHERE TO START BGM</span>
+          </div>
+        </div>
+      )}
 
       {/* =================================================================
           MAIN CONTENT AREA:
